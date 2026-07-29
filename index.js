@@ -1,64 +1,45 @@
-﻿import express from 'express';
-import puppeteer from 'puppeteer';
-
+const express = require('express');
+const puppeteer = require('puppeteer');
 const app = express();
+const port = process.env.PORT || 3000;
+
 app.use(express.json());
 
-let ultimoNumero = null;
+// Rota principal para a Lovable consumir os dados do rob?
+app.get('/', async (req, res) => {
+  try {
+    // Exemplo de automa??o/scraping com Puppeteer para o 1pra1bet
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
+    const page = await browser.newPage();
+    
+    // Altere para o link real da p?gina de apostas se necess?rio
+    await page.goto('https://www.1pra1bet.com', { waitUntil: 'networkidle2', timeout: 30000 });
+    
+    // Exemplo de extra??o de dados da tela (ajuste os seletores conforme sua estrutura)
+    const numeros = await page.evaluate(() => {
+      // Cole aqui a l?gica de extra??o dos n?meros da roleta se houver elementos espec?ficos
+      return []; 
+    });
 
-app.get('/api/numero', (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.json({ numero: ultimoNumero });
-});
+    await browser.close();
 
-app.post('/api/atualizar', (req, res) => {
-  const { numero } = req.body;
-  if(numero !== undefined) {
-    ultimoNumero = numero;
-    console.log("Atualizado: " + numero);
+    res.json({
+      status: 'online',
+      message: 'Robo a funcionar perfeitamente',
+      ultimosNumeros: numeros,
+      timestamp: new Date()
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'erro',
+      message: error.message
+    });
   }
-  res.sendStatus(200);
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log("Servidor rodando");
-  iniciarRoboNuvem();
+app.listen(port, () => {
+  console.log(Servidor rodando na porta );
 });
-
-async function iniciarRoboNuvem() {
-  while(true) {
-    try {
-      const browser = await puppeteer.launch({
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
-      });
-      const page = await browser.newPage();
-      await page.goto('https://1pra1.bet.br', {waitUntil: 'networkidle2', timeout: 60000});
-      
-      while(true) {
-        const frames = page.frames();
-        for(const f of frames) {
-          try {
-            const n = await f.evaluate(() => {
-              const els = document.querySelectorAll('[class*="history"] [class*="number"], [class*="recent"] [class*="ball"], [class*="results"] span, .pie-history-item');
-              for(const el of els) {
-                const t = el.innerText ? el.innerText.trim() : '';
-                if(/^([0-9]|[12][0-9]|3[0-6])$/.test(t)) return parseInt(t, 10);
-              }
-              return null;
-            });
-            if(n !== null) {
-              ultimoNumero = n;
-            }
-          } catch(e){}
-        }
-        await new Promise(r => setTimeout(r, 2000));
-      }
-    } catch(err) {
-      await new Promise(r => setTimeout(r, 5000));
-    }
-  }
-}
-
-// Atualizacao forcada e limpa
