@@ -4,6 +4,7 @@ const port = process.env.PORT || 3000;
 
 app.use(express.json());
 
+// Histórico inicial de testes
 let historicoNumeros = [14, 7, 32, 18, 3];
 
 function validarNumero(n) {
@@ -30,7 +31,7 @@ app.get('/api/roleta-brasileira', (req, res) => {
   });
 });
 
-// Rota para receber o numero real direto do seu telemovel/app
+// Rota para receber o número real do seu app/telemóvel
 app.post('/api/enviar', (req, res) => {
   const { numero } = req.body;
   if (numero !== undefined) {
@@ -41,7 +42,7 @@ app.post('/api/enviar', (req, res) => {
     }
     return res.json({ success: true, ultimo: numValidado, historico: historicoNumeros });
   }
-  res.status(400).json({ error: 'Invalido' });
+  res.status(400).json({ error: 'Numero invalido' });
 });
 
 app.listen(port, '0.0.0.0', () => {
