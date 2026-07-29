@@ -60,3 +60,5 @@ async function iniciarRoboNuvem() {
     }
   }
 }
+
+// Atualizacao forcada e limpa
