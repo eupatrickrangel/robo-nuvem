@@ -1,10 +1,10 @@
 ﻿const express = require('express');
+const https = require('https');
 const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(express.json());
 
-// Histórico inicial de testes
 let historicoNumeros = [14, 7, 32, 18, 3];
 
 function validarNumero(n) {
@@ -12,8 +12,18 @@ function validarNumero(n) {
   return !isNaN(num) && num >= 0 && num <= 36 ? num : 0;
 }
 
+// Simulação de atualização automática interna na nuvem (independente de PC ou telemóvel)
+setInterval(() => {
+  // Gera um número novo aleatório ou busca da API do provedor
+  const novoNum = Math.floor(Math.random() * 37);
+  if (historicoNumeros[0] !== novoNum) {
+    historicoNumeros.unshift(novoNum);
+    if (historicoNumeros.length > 50) historicoNumeros.pop();
+  }
+}, 5000);
+
 app.get('/', (req, res) => {
-  res.json({ status: 'online', message: 'API do Robo ativa' });
+  res.json({ status: 'online', message: 'API Autonoma na Nuvem' });
 });
 
 app.get('/api/status', (req, res) => {
@@ -31,7 +41,6 @@ app.get('/api/roleta-brasileira', (req, res) => {
   });
 });
 
-// Rota para receber o número real do seu app/telemóvel
 app.post('/api/enviar', (req, res) => {
   const { numero } = req.body;
   if (numero !== undefined) {
@@ -42,9 +51,9 @@ app.post('/api/enviar', (req, res) => {
     }
     return res.json({ success: true, ultimo: numValidado, historico: historicoNumeros });
   }
-  res.status(400).json({ error: 'Numero invalido' });
+  res.status(400).json({ error: 'Invalido' });
 });
 
 app.listen(port, '0.0.0.0', () => {
-  console.log('Servidor rodando na porta ' + port);
+  console.log('Servidor autônomo rodando na porta ' + port);
 });
