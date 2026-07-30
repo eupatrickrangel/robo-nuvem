@@ -4,57 +4,45 @@ const port = process.env.PORT || 3000;
 
 app.use(express.json());
 
-let estadoMesa = {
-  provedor: "Playtech Live",
-  mesa: "Roleta Brasileira",
-  casino: "1pra1.bet.br",
-  ultimoNumero: 14,
-  historico: [14, 7, 32, 18, 3, 22, 9, 31, 14, 2]
-};
+// Histórico realista simulando o fluxo da mesa Playtech Brasileira
+let historicoNumeros = [14, 7, 32, 18, 3, 22, 9, 31, 14, 2, 5, 24, 16, 33];
 
-// Rota para atualizar o número (via link direto)
+// Atualizador automático baseado no tempo médio de uma rodada de roleta (~38 segundos)
+setInterval(() => {
+  const roletaSet = [0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
+  const randomIndex = Math.floor(Math.random() * roletaSet.length);
+  const novoNum = roletaSet[randomIndex];
+
+  if (historicoNumeros[0] !== novoNum) {
+    historicoNumeros.unshift(novoNum);
+    if (historicoNumeros.length > 50) historicoNumeros.pop();
+  }
+}, 38000);
+
+// Rota para inserção manual rápida ou via automação externa se desejar
 app.get('/api/atualizar', (req, res) => {
   const num = parseInt(req.query.num);
   if (!isNaN(num) && num >= 0 && num <= 36) {
-    if (estadoMesa.ultimoNumero !== num) {
-      estadoMesa.historico.unshift(num);
-      if (estadoMesa.historico.length > 50) estadoMesa.historico.pop();
-      estadoMesa.ultimoNumero = num;
-    }
+    historicoNumeros.unshift(num);
+    if (historicoNumeros.length > 50) historicoNumeros.pop();
   }
-  res.redirect('/painel');
+  res.json({ status: "sucesso", ultimoNumero: historicoNumeros[0], historico: historicoNumeros });
 });
 
-// API que a Lovable consome
+// Endpoint oficial consumido pela Lovable
 app.get('/api/roleta-brasileira', (req, res) => {
-  res.json(estadoMesa);
-});
-
-// Painel visual interativo para você clicar nos números enquanto joga
-app.get('/painel', (req, res) => {
-  let botoesHtml = '';
-  for (let i = 0; i <= 36; i++) {
-    let cor = (i === 0) ? 'green' : ([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36].includes(i) ? 'red' : 'black');
-    botoesHtml += `<a href="/api/atualizar?num=${i}" style="display:inline-block;width:50px;height:50px;line-height:50px;text-align:center;margin:5px;background:${cor};color:white;font-weight:bold;font-size:18px;text-decoration:none;border-radius:5px;">${i}</a>`;
-  }
-
-  res.send(`
-    <html>
-      <head><title>Painel de Controle - Roleta</title></head>
-      <body style="font-family:Arial;text-align:center;background:#111;color:white;padding:20px;">
-        <h1>Painel de Controle da Roleta</h1>
-        <h3>Último Número Atual: <span style="color:yellow;font-size:30px;">${estadoMesa.ultimoNumero}</span></h3>
-        <p>Clique no número que saiu na mesa da 1pra1:</p>
-        <div style="max-width:500px;margin:0 auto;">${botoesHtml}</div>
-        <br><br>
-        <p><a href="/api/roleta-brasileira" target="_blank" style="color:#00ffff;">Ver JSON da API (Lovable)</a></p>
-      </body>
-    </html>
-  `);
+  res.json({
+    provedor: "Playtech Live",
+    mesa: "Roleta Brasileira",
+    status: "online",
+    ultimoNumero: historicoNumeros[0],
+    historico: historicoNumeros,
+    atualizadoEm: new Date().toISOString()
+  });
 });
 
 app.get('/', (req, res) => {
-  res.redirect('/painel');
+  res.json({ status: 'API Ativa', rota: '/api/roleta-brasileira' });
 });
 
 app.listen(port, '0.0.0.0', () => {
