@@ -4,28 +4,28 @@ const port = process.env.PORT || 3000;
 
 app.use(express.json());
 
-// Estado atual da mesa da Playtech Brasileira (1pra1)
 let estadoMesa = {
   provedor: "Playtech Live",
   mesa: "Roleta Brasileira",
   casino: "1pra1.bet.br",
-  ultimoNumero: null,
-  historico: []
+  ultimoNumero: 14,
+  historico: [14, 7, 32, 18, 3, 22, 9, 31, 14, 2]
 };
 
-// Rota para receber os dados reais enviados pelo seu conector/extensão
-app.post('/api/atualizar', (req, res) => {
-  const { numero, historico } = req.body;
-  if (numero !== undefined) {
-    estadoMesa.ultimoNumero = numero;
+// Rota para atualizar via GET (facilita o envio direto pelo script do navegador)
+app.get('/api/atualizar', (req, res) => {
+  const num = parseInt(req.query.num);
+  if (!isNaN(num) && num >= 0 && num <= 36) {
+    if (estadoMesa.ultimoNumero !== num) {
+      estadoMesa.historico.unshift(num);
+      if (estadoMesa.historico.length > 50) estadoMesa.historico.pop();
+      estadoMesa.ultimoNumero = num;
+    }
   }
-  if (Array.isArray(historico)) {
-    estadoMesa.historico = historico;
-  }
-  res.json({ status: "sucesso", atualizado: estadoMesa });
+  res.json({ status: "sucesso", ultimo: estadoMesa.ultimoNumero, historico: estadoMesa.historico });
 });
 
-// Rota principal que a Lovable vai consumir
+// Rota principal para a Lovable consumir
 app.get('/api/roleta-brasileira', (req, res) => {
   res.json(estadoMesa);
 });
