@@ -1,59 +1,80 @@
-﻿const express = require('express');
-const https = require('https');
+const express = require("express");
+
 const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(express.json());
 
-let historicoNumeros = [14, 7, 32, 18, 3];
+let historicoNumeros = [];
 
-function validarNumero(n) {
-  const num = parseInt(n, 10);
-  return !isNaN(num) && num >= 0 && num <= 36 ? num : 0;
+function validarNumero(numero) {
+    const n = Number(numero);
+
+    if (Number.isInteger(n) && n >= 0 && n <= 36) {
+        return n;
+    }
+
+    return null;
 }
 
-// Simulação de atualização automática interna na nuvem (independente de PC ou telemóvel)
-setInterval(() => {
-  // Gera um número novo aleatório ou busca da API do provedor
-  const novoNum = Math.floor(Math.random() * 37);
-  if (historicoNumeros[0] !== novoNum) {
-    historicoNumeros.unshift(novoNum);
-    if (historicoNumeros.length > 50) historicoNumeros.pop();
-  }
-}, 5000);
-
-app.get('/', (req, res) => {
-  res.json({ status: 'online', message: 'API Autonoma na Nuvem' });
+app.get("/", (req, res) => {
+    res.json({
+        status: "online",
+        message: "API da Roleta Brasileira"
+    });
 });
 
-app.get('/api/status', (req, res) => {
-  res.json({ online: true, timestamp: new Date() });
+app.get("/api/status", (req, res) => {
+    res.json({
+        online: true,
+        ultimoNumero: historicoNumeros[0] ?? null,
+        quantidade: historicoNumeros.length,
+        timestamp: new Date()
+    });
 });
 
-app.get('/api/numero', (req, res) => {
-  res.json({ numero: validarNumero(historicoNumeros[0]) });
+app.get("/api/numero", (req, res) => {
+    res.json({
+        numero: historicoNumeros[0] ?? null
+    });
 });
 
-app.get('/api/roleta-brasileira', (req, res) => {
-  res.json({
-    ultimoNumero: validarNumero(historicoNumeros[0]),
-    historico: historicoNumeros.map(validarNumero)
-  });
+app.get("/api/roleta-brasileira", (req, res) => {
+    res.json({
+        ultimoNumero: historicoNumeros[0] ?? null,
+        historico: historicoNumeros
+    });
 });
 
-app.post('/api/enviar', (req, res) => {
-  const { numero } = req.body;
-  if (numero !== undefined) {
-    const numValidado = validarNumero(numero);
-    if (historicoNumeros[0] !== numValidado) {
-      historicoNumeros.unshift(numValidado);
-      if (historicoNumeros.length > 50) historicoNumeros.pop();
+app.post("/api/enviar", (req, res) => {
+
+    const numero = validarNumero(req.body.numero);
+
+    if (numero === null) {
+        return res.status(400).json({
+            success: false,
+            erro: "Número inválido"
+        });
     }
-    return res.json({ success: true, ultimo: numValidado, historico: historicoNumeros });
-  }
-  res.status(400).json({ error: 'Invalido' });
+
+    if (historicoNumeros[0] !== numero) {
+
+        historicoNumeros.unshift(numero);
+
+        if (historicoNumeros.length > 50) {
+            historicoNumeros.pop();
+        }
+
+    }
+
+    res.json({
+        success: true,
+        ultimoNumero: numero,
+        historico: historicoNumeros
+    });
+
 });
 
-app.listen(port, '0.0.0.0', () => {
-  console.log('Servidor autônomo rodando na porta ' + port);
+app.listen(port, "0.0.0.0", () => {
+    console.log(`Servidor iniciado na porta ${port}`);
 });
