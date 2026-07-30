@@ -1,25 +1,43 @@
-﻿const https = require('https');
+const https = require("https");
 
-// Simula um gerador de numeros ou busca de API externa
-const numeroAleatorio = Math.floor(Math.random() * 37);
+const numero = process.argv[2];
 
-const data = JSON.stringify({ numero: numeroAleatorio });
+if (!numero) {
+    console.log("Uso:");
+    console.log("node atualizar.js 17");
+    process.exit();
+}
 
-const req = https.request({
-  hostname: 'robo-nuvem-production.up.railway.app',
-  path: '/api/enviar',
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'Content-Length': data.length
-  }
-}, (res) => {
-  console.log(Status: );
+const data = JSON.stringify({
+    numero: Number(numero)
 });
 
-req.on('error', (error) => {
-  console.error(error);
+const options = {
+    hostname: "robo-nuvem-production.up.railway.app",
+    path: "/api/enviar",
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json",
+        "Content-Length": Buffer.byteLength(data)
+    }
+};
+
+const req = https.request(options, (res) => {
+
+    let body = "";
+
+    res.on("data", chunk => body += chunk);
+
+    res.on("end", () => {
+
+        console.log("Status:", res.statusCode);
+        console.log(body);
+
+    });
+
 });
+
+req.on("error", console.error);
 
 req.write(data);
 req.end();
