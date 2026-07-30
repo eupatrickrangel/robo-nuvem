@@ -4,37 +4,44 @@ const port = process.env.PORT || 3000;
 
 app.use(express.json());
 
-// Histórico base
-let historicoNumeros = [12, 35, 3, 26, 0, 32, 15, 19];
+// Histórico inicial para a Immersive Roulette
+let historicoNumeros = [14, 7, 32, 19, 3, 26, 0, 32, 15, 19, 4];
 
-// Rota de Sincronização Real (Aqui é onde o número real entra na nuvem)
-app.get('/api/sincronizar', (req, res) => {
-  const num = parseInt(req.query.num);
-  if (!isNaN(num) && num >= 0 && num <= 36) {
-    if (historicoNumeros[0] !== num) {
-      historicoNumeros.unshift(num);
-      if (historicoNumeros.length > 50) historicoNumeros.pop();
+// Rota para atualizar o número (caso queira injetar novos resultados)
+app.get('/api/evolution-atualizar', (req, res) => {
+  try {
+    const num = parseInt(req.query.num);
+    if (!isNaN(num) && num >= 0 && num <= 36) {
+      if (historicoNumeros[0] !== num) {
+        historicoNumeros.unshift(num);
+        if (historicoNumeros.length > 50) historicoNumeros.pop();
+      }
+      return res.json({ status: "sucesso", ultimoNumero: historicoNumeros[0], historico: historicoNumeros });
     }
-    return res.json({ status: "sucesso", ultimoNumero: historicoNumeros[0], historico: historicoNumeros });
+    res.status(400).json({ erro: "Número inválido" });
+  } catch (e) {
+    res.status(500).json({ erro: "Erro interno" });
   }
-  res.status(400).json({ erro: "Número inválido" });
 });
 
-// A rota oficial que a Lovable lê
-app.get('/api/roleta-brasileira', (req, res) => {
-  res.json({
-    provedor: "1pra1 Live",
-    mesa: "Roleta Ao Vivo",
-    idMesa: "420015702",
-    status: "online",
-    ultimoNumero: historicoNumeros[0],
-    historico: historicoNumeros,
-    atualizadoEm: new Date().toISOString()
-  });
+// A Rota oficial que a Lovable vai ler
+app.get('/api/roleta-evolution', (req, res) => {
+  try {
+    res.json({
+      provedor: "Evolution Gaming",
+      mesa: "Immersive Roulette",
+      status: "online",
+      ultimoNumero: historicoNumeros[0],
+      historico: historicoNumeros,
+      atualizadoEm: new Date().toISOString()
+    });
+  } catch (e) {
+    res.status(500).json({ erro: "Erro ao gerar resposta" });
+  }
 });
 
 app.get('/', (req, res) => {
-  res.json({ status: 'API Pronta para Sincronizar', endpoint: '/api/roleta-brasileira' });
+  res.json({ status: 'API Immersive Roulette Ativa', endpoint: '/api/roleta-evolution' });
 });
 
 app.listen(port, '0.0.0.0', () => {
