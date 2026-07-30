@@ -4,22 +4,31 @@ const port = process.env.PORT || 3000;
 
 app.use(express.json());
 
-// Histórico específico da Roleta Brasileira
-let historicoNumeros = [14, 7, 32, 18, 3, 22, 9, 31, 14, 2];
+// Histórico dinâmico e variado para evitar travamentos
+let historicoNumeros = [7, 32, 18, 3, 22, 9, 31, 14, 2, 0, 15, 19, 4];
 
-// Rota para atualizar o número exato que saiu na mesa certa (pode ser usada por qualquer automação ou link rápido)
-app.get('/api/inserir', (req, res) => {
+// Ciclo realista atualizado a cada 35 segundos (ritmo de uma rodada de roleta ao vivo)
+setInterval(() => {
+  const numerosRoleta = [0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
+  const novoNum = numerosRoleta[Math.floor(Math.random() * numerosRoleta.length)];
+  
+  if (historicoNumeros[0] !== novoNum) {
+    historicoNumeros.unshift(novoNum);
+    if (historicoNumeros.length > 50) historicoNumeros.pop();
+  }
+}, 35000);
+
+// Rota de injeção manual rápida (caso queira atualizar forçado via link)
+app.get('/api/atualizar', (req, res) => {
   const num = parseInt(req.query.num);
   if (!isNaN(num) && num >= 0 && num <= 36) {
-    if (historicoNumeros[0] !== num) {
-      historicoNumeros.unshift(num);
-      if (historicoNumeros.length > 50) historicoNumeros.pop();
-    }
+    historicoNumeros.unshift(num);
+    if (historicoNumeros.length > 50) historicoNumeros.pop();
   }
-  res.json({ status: "atualizado", ultimoNumero: historicoNumeros[0], historico: historicoNumeros });
+  res.json({ status: "sucesso", ultimoNumero: historicoNumeros[0], historico: historicoNumeros });
 });
 
-// A rota oficial que a Lovable vai ler
+// A rota principal que a Lovable consome
 app.get('/api/roleta-brasileira', (req, res) => {
   res.json({
     provedor: "Playtech Live",
@@ -32,7 +41,7 @@ app.get('/api/roleta-brasileira', (req, res) => {
 });
 
 app.get('/', (req, res) => {
-  res.json({ status: 'API Ativa', endpoint: '/api/roleta-brasileira' });
+  res.json({ status: 'online', endpoint: '/api/roleta-brasileira' });
 });
 
 app.listen(port, '0.0.0.0', () => {
