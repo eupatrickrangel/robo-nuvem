@@ -4,36 +4,36 @@ const port = process.env.PORT || 3000;
 
 app.use(express.json());
 
-// Histórico inicial simulando a mesa da Playtech Brasileira
-let historicoNumeros = [14, 7, 32, 18, 3, 22, 9, 31, 14, 2];
+// Estado atual da mesa da Playtech Brasileira (1pra1)
+let estadoMesa = {
+  provedor: "Playtech Live",
+  mesa: "Roleta Brasileira",
+  casino: "1pra1.bet.br",
+  ultimoNumero: null,
+  historico: []
+};
 
-// Simulação sincronizada com o tempo real de giros da Playtech Live (~38 a 45 segundos por rodada)
-setInterval(() => {
-  const novoNum = Math.floor(Math.random() * 37);
-  if (historicoNumeros[0] !== novoNum) {
-    historicoNumeros.unshift(novoNum);
-    if (historicoNumeros.length > 50) historicoNumeros.pop();
+// Rota para receber os dados reais enviados pelo seu conector/extensão
+app.post('/api/atualizar', (req, res) => {
+  const { numero, historico } = req.body;
+  if (numero !== undefined) {
+    estadoMesa.ultimoNumero = numero;
   }
-}, 40000);
-
-app.get('/', (req, res) => {
-  res.json({ 
-    status: 'online', 
-    mesa: 'Roleta Brasileira Playtech Live',
-    versao: '2.0' 
-  });
+  if (Array.isArray(historico)) {
+    estadoMesa.historico = historico;
+  }
+  res.json({ status: "sucesso", atualizado: estadoMesa });
 });
 
+// Rota principal que a Lovable vai consumir
 app.get('/api/roleta-brasileira', (req, res) => {
-  res.json({
-    provedor: 'Playtech Live',
-    mesa: 'Roleta Brasileira',
-    ultimoNumero: historicoNumeros[0],
-    historico: historicoNumeros,
-    atualizadoEm: new Date().toISOString()
-  });
+  res.json(estadoMesa);
+});
+
+app.get('/', (req, res) => {
+  res.json({ status: 'online', sistema: 'Sincronizador Playtech Live' });
 });
 
 app.listen(port, '0.0.0.0', () => {
-  console.log('Servidor da Roleta Playtech rodando na porta ' + port);
+  console.log('Servidor rodando na porta ' + port);
 });
